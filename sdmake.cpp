@@ -64,7 +64,19 @@ void parse(string &nameInputFile) {
 }
 
 int getParameterCommandLine(int argc, char* argv[]) {
-
+	string inputFile="";
+	if (argc<3) {
+		cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+		exit(0);
+	} else {
+		if (argv[1] != (string("-nkt")).c_str()) {
+			cout << argv[1] <<" parameter doesn't exist\n"<<endl;
+			 cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+		} else {
+			inputFile=argv[2];
+			if (inputFile)
+		}
+	}
 }
 
 
