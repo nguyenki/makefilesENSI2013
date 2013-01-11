@@ -5,9 +5,16 @@
 #include <sstream>
 #include "sdmake.h"
 
+
+string inputFile="";
+
 int main( int argc, char* argv[])
 {
-	cout <<"Hello world"<<"\n";
+	cout <<"Distributed MakeFile"<<"\n";
+	int parseResult = getParameterCommandLine(argc,argv);
+	if (parseResult!=1) {
+		return -1;
+	}
 }
 
 
@@ -35,7 +42,7 @@ void parse(string &nameInputFile) {
 	ifstream inFile;
 	inFile.open(nameInputFile.c_str(), ifstream::in);
 	if (inFile.bad()) {
-		cerr <<"Bad bit is set in Makefile"<< endl << endl;
+		cerr <<"Bad bit is set in Makefile"<< endl;
 		exit(BAD_FILE);
 	}
 	while (!inFile.eof()) {
@@ -55,7 +62,7 @@ void parse(string &nameInputFile) {
 			string dependency;
 			while (line_temp >> dependency) {
 				addDependency(rule, dependency);
-			}
+  			}
 		} else {
 			rule->command.push_back(line);
 		}
@@ -64,17 +71,22 @@ void parse(string &nameInputFile) {
 }
 
 int getParameterCommandLine(int argc, char* argv[]) {
-	string inputFile="";
 	if (argc<3) {
 		cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
 		exit(0);
 	} else {
 		if (argv[1] != (string("-nkt")).c_str()) {
 			cout << argv[1] <<" parameter doesn't exist\n"<<endl;
-			 cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+			cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+			return -1;
 		} else {
-			inputFile=argv[2];
-			if (inputFile)
+			string temp = argv[2];
+			if (temp=="Makefile") {
+				inputFile = temp;
+				return 1;
+			} else {
+				return -1;
+			}
 		}
 	}
 }
