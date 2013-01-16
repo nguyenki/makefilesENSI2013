@@ -13,11 +13,16 @@
 #include <mpi.h>
 
 #define BAD_FILE -1
-#define LINE_LENGTH 32687
+#define LINE_LENGTH 1024
 
 using namespace std;
 
-const string CORRECT_INPUT = "sdmake makefile_name";
+const string MATRIX = "TestPrograms/matrix/";
+const string PREMIER = "/TestPrograms/premier/";
+const string BLENDER_249 = "/TestPrograms/blender_2.49/";
+const string BLENDER_259 = "/TestPrograms/blender_2.59/";
+const string TEST = "/TestPrograms/test/";
+int cptRule = 0;
 
 /* Struct Rule pour presenter une ligne (une regle) du MakeFile
  * Une regle depend aux autre regles et a aussi des dependances
@@ -25,13 +30,17 @@ const string CORRECT_INPUT = "sdmake makefile_name";
 struct Rule {
 	int idRule;
 	string name;
-	vector<int> command; // La ligne de la commande suivant une regle
+	vector<string> command; // La ligne de la commande suivant une regle
 	bool isExecuted;
 	bool isFinished;
 	list<Rule*> dependences;
 	list<Rule*> dependants;
 	Rule (string ruleName): isExecuted(false), isFinished(false), name(ruleName) { }
 };
+
+void setIdRule(Rule* rule, int id) {
+	rule->idRule = id;
+}
 
 map<string, Rule*> rules;
 vector<Rule*> tasks;
@@ -48,4 +57,11 @@ void parse(string &nameInputFile);
 // Lire la commande entree par l'utilisateur
 int getParameterCommandLine(int argc, char* argv[]);
 
+void printAllCommand(const vector<string> &cmd);
+
+void printARule(Rule* rule);
+
+void printAllRule(map<string,Rule*> rules);
+
+void openFile(const string &path);
 #endif
