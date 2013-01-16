@@ -131,6 +131,18 @@ void printAllRule(map<string,Rule*> rules) {
 	}
 }
 
+
+void executeCommand(Rule* rule) {
+        vector<string> cmds = rule->command;
+        for (vector<string>::const_iterator it = cmds.begin(); it!= 
+cmds.end();$
+                string cmd = (*it);
+                cout<< "Running command:" << cmd << "\n" <<endl;
+                system(cmd.c_str());
+        }
+}
+
+
 void openFile(const string &path) {
 	char line[LINE_LENGTH];
 	std::ostringstream oss;

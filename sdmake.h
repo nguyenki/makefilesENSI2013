@@ -51,6 +51,9 @@ Rule *findRuleByName(const string &rule);
 // Ajouter un regle dependant d'un autre regle
 void addDependency(Rule* rule, const string &dependencyName);
 
+// Exécuter une commande
+void executeCommand(Rule* rule);
+
 // Parser un fichier Makefile simple
 void parse(string &nameInputFile);
 
