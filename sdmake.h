@@ -24,17 +24,22 @@ const string BLENDER_259 = "/TestPrograms/blender_2.59/";
 const string TEST = "/TestPrograms/test/";
 int cptRule = 0;
 
+int rang; // Identifier de chaque machine
+int nbM; // Nombre de machine
+
+string target; // Le premier cible a executer
+int tasksTodo;
 /* Struct Rule pour presenter une ligne (une regle) du MakeFile
  * Une regle depend aux autre regles et a aussi des dependances
-*/
+ */
 struct Rule {
 	int idRule;
 	string name;
 	vector<string> command; // La ligne de la commande suivant une regle
 	bool isExecuted;
 	bool isFinished;
-	list<Rule*> dependences;
-	list<Rule*> dependants;
+	list<Rule*> dependences; // Les regles que cette regle depend
+	list<Rule*> dependants;  // Les regles qui depandent de cette regle
 	Rule (string ruleName): isExecuted(false), isFinished(false), name(ruleName) { }
 };
 
@@ -54,6 +59,9 @@ void addDependency(Rule* rule, const string &dependencyName);
 // Exécuter une commande
 void executeCommand(Rule* rule);
 
+// Masquer que la tache est fini
+void maskTaskAsFinished(Rule* rule);
+
 // Parser un fichier Makefile simple
 void parse(string &nameInputFile);
 
@@ -68,3 +76,9 @@ void printAllRule(map<string,Rule*> rules);
 
 void openFile(const string &path);
 #endif
+
+
+/*
+Notes:
+- hostname slots=numcores
+*/

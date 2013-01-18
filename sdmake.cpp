@@ -4,6 +4,8 @@
 #include <cstring>
 #include <sstream>
 #include <map>
+
+#include <mpi.h>
 #include "sdmake.h"
 
 
@@ -18,9 +20,18 @@ int main( int argc, char* argv[])
 	}
 //	openFile(inputFile);
 
+	/*
+	 * Routine principale
+	 */
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rang);
 	parse(inputFile);
-	printAllRule(rules);
+	
 
+	MPI_Finalize();
+//	printAllRule(rules);
+	return 0;
 }
 
 
@@ -68,6 +79,7 @@ void parse(string &nameInputFile) {
 			if (ruleName.length() <2 && ruleName[ruleName.length()]!=':')
 				continue;
 			ruleName = ruleName.substr(0, ruleName.size()-1);
+			target = ruleName;
 			rule = findRuleByName(ruleName);
 			string dependency;
 			while (line_temp >> dependency) {
@@ -131,11 +143,21 @@ void printAllRule(map<string,Rule*> rules) {
 	}
 }
 
+void maskTaskAsFinished(Rule* rule) {
+	rule->isFinished = true;
+
+	for (list<Rule*>::const_iterator it =(rule->dependants).begin(); it!=(rule->dependants).end(); ++it) {
+		if ((*it)->isExecuted) {
+			(*it)->dependences.remove(rule);
+		}
+	}
+	tasksTodo-=1;
+}
+
 
 void executeCommand(Rule* rule) {
         vector<string> cmds = rule->command;
-        for (vector<string>::const_iterator it = cmds.begin(); it!= 
-cmds.end();$
+        for (vector<string>::const_iterator it = cmds.begin(); it!= cmds.end(); ++it) {
                 string cmd = (*it);
                 cout<< "Running command:" << cmd << "\n" <<endl;
                 system(cmd.c_str());
