@@ -12,8 +12,14 @@
 
 #include <mpi.h>
 
-#define BAD_FILE -1
+#define BAD_FILE -2
 #define LINE_LENGTH 1024
+#define MASTER 0
+#define REQUEST_TAG 11
+#define FINISHED_TAG 8
+#define DIE_TAG -1
+#define NEED_FILE 89
+#define SENT_FILE 23
 
 using namespace std;
 
@@ -24,11 +30,12 @@ const string BLENDER_259 = "/TestPrograms/blender_2.59/";
 const string TEST = "/TestPrograms/test/";
 int cptRule = 0;
 
-int rang; // Identifier de chaque machine
-int nbM; // Nombre de machine
 
 string target; // Le premier cible a executer
 int tasksTodo;
+
+list<int> myTasks;
+
 /* Struct Rule pour presenter une ligne (une regle) du MakeFile
  * Une regle depend aux autre regles et a aussi des dependances
  */
@@ -36,11 +43,12 @@ struct Rule {
 	int idRule;
 	string name;
 	vector<string> command; // La ligne de la commande suivant une regle
-	bool isExecuted;
+	bool isExecute;
 	bool isFinished;
+	list<string> dpNames; // Enregistre les noms des fichiers necessaires
 	list<Rule*> dependences; // Les regles que cette regle depend
 	list<Rule*> dependants;  // Les regles qui depandent de cette regle
-	Rule (string ruleName): isExecuted(false), isFinished(false), name(ruleName) { }
+	Rule (string ruleName): isExecute(false), isFinished(false), name(ruleName) { }
 };
 
 void setIdRule(Rule* rule, int id) {
@@ -48,7 +56,7 @@ void setIdRule(Rule* rule, int id) {
 }
 
 map<string, Rule*> rules;
-vector<Rule*> tasks;
+vector<Rule*> tasks; // Enregistrer l'ordre d'execution de tous les regles dans le Makefile
 
 // Chercher une regle using son nom. Retourner un nouveau regle si'il n'existe pas
 Rule *findRuleByName(const string &rule);
@@ -58,6 +66,21 @@ void addDependency(Rule* rule, const string &dependencyName);
 
 // Exécuter une commande
 void executeCommand(Rule* rule);
+
+// Executer les tasks d'une machine
+void executeAllMyTasks();
+
+MPI_Status receiveMessages();
+
+bool isAllDependantFilesExist(Rule* rule);
+
+void sendFileToMaster(const string &fileName, int idDest);
+
+bool isFileExist(const string &fileName);
+
+string getCurrentDirectory();
+
+vector<string> getAllFileNameInCurrentDir();
 
 // Masquer que la tache est fini
 void maskTaskAsFinished(Rule* rule);
@@ -75,10 +98,13 @@ void printARule(Rule* rule);
 void printAllRule(map<string,Rule*> rules);
 
 void openFile(const string &path);
+
+void master();
+
+void worker();
+
+void getTaskTodoFromRule(Rule* rule);
+
 #endif
 
 
-/*
-Notes:
-- hostname slots=numcores
-*/
