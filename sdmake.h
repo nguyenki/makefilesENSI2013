@@ -74,9 +74,11 @@ MPI_Status receiveMessages();
 
 bool isAllDependantFilesExist(Rule* rule);
 
-void sendFileToMaster(const string &fileName, int idDest);
+void sendFileToMaster(const string &fileName, const string &hostname);
 
 bool isFileExist(const string &fileName);
+
+void deleteFile(const string &fileName);
 
 string getCurrentDirectory();
 

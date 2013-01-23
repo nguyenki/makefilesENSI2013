@@ -49,6 +49,9 @@ int main( int argc, char* argv[])
 		worker();
 	}
 */
+
+//	deleteFile("kim");
+//	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
 	MPI_Finalize();
 
 	return 0;
@@ -97,6 +100,9 @@ void executeAllMyTasks() {
 				}
 				tasks_done.push_back(*it);
 			}
+		} else {
+			// Demander le fichier necessaire
+			
 		}
 	}
 	for(list<int>::const_iterator it = tasks_done.begin(); it!=tasks_done.end();++it) {
@@ -145,6 +151,17 @@ void master() {
 
 
 MPI_Status receiveMessages() {
+	// Recevoir la demande de tache
+	MPI_Status st;
+	char* fileName;
+	MPI_Recv(&fileName, 1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &st);
+	int src = st.MPI_SOURCE;
+	string hostToSend;
+	if (st.MPI_TAG == NEED_FILE) {
+		sendFileToMaster(fileName,hostToSend);
+	}
+
+	// Recevoir les autres demandes
 	MPI_Status status;
 	int msg;
 	MPI_Recv(&msg, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
@@ -153,9 +170,6 @@ MPI_Status receiveMessages() {
 		case FINISHED_TAG: {
 			maskTaskAsFinished(tasks[msg]);
 			break;
-		}
-		case NEED_FILE: {
-			
 		}
 		case SENT_FILE: {
 			
@@ -246,9 +260,14 @@ void getTaskTodoFromRule(Rule* rule) {
 	tasks.push_back(rule);
 }
 
-// TODO *********************************
-bool isAllDependantFilesExist(Rule* rule) {
 
+bool isAllDependantFilesExist(Rule* rule) {
+	bool allDependantFileExist = true;
+	for(list<string>::const_iterator it = rule->dpNames.begin(); it!=rule->dpNames.end();++it) {
+		bool fileExist = isFileExist(*it);
+		allDependantFileExist = allDependantFileExist && fileExist;
+	}
+	return allDependantFileExist;
 }
 
 bool isFileExist(const string &fileName) {
@@ -262,8 +281,29 @@ bool isFileExist(const string &fileName) {
 	return exist;
 }
 
-void sendFileToMaster(const string &fileName, int idDest) {
+// TODO: need to review
+void sendDemandFile(const string &fileName) {
+	MPI_Request request;
+	MPI_Isend(&myRank, 1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD, &request);
+}
 
+void deleteFile(const string &fileName) {
+	string cmd = "rm "+fileName;
+	system(cmd.c_str());
+	if (isFileExist(fileName)) {
+		cout <<"File: "<<fileName <<"  is deleted" <<endl;
+	} else {
+		cout << "Unable to delete file: "<<fileName<<endl;
+	}
+}
+
+void sendFileToMaster(const string &fileName, const string &hostname) {
+	cout <<"Current directory:"<<getCurrentDirectory()<<endl;
+	string cmd = "scp "+fileName+" "+hostname+":~";
+	system(cmd.c_str());
+	if (myRank!=MASTER) {
+		deleteFile(fileName);
+	}
 }
 
 
@@ -342,7 +382,7 @@ void executeCommand(Rule* rule) {
 		}
 		cout << "WARNING: File" << rule->name << " has not existed yet" <<endl;
 	}
-	sendFileToMaster(rule->name,0);
+	sendFileToMaster(rule->name,"");
 }
 
 
