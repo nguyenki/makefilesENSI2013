@@ -19,11 +19,14 @@ using namespace std;
 string inputFile="";
 int myRank;
 int nbM;
+char processName[MPI_MAX_PROCESSOR_NAME];
+char masterName[MPI_MAX_PROCESSOR_NAME];
 
 int main( int argc, char* argv[])
 {
 	cout <<"Distributed MakeFile"<<"\n";
 	int parseResult = getParameterCommandLine(argc,argv);
+	int len;
 	if (parseResult!=1) {
 		return -1;
 	}
@@ -37,7 +40,7 @@ int main( int argc, char* argv[])
 	getTaskTodoFromRule(rules[target]);
 	tasksTodo = tasks.size();
 	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
-
+	MPI_Get_processor_name(processName, &len);
 	// Distribuer les taches
 	for(int i=myRank;i<tasks.size();i+=nbM) {
 		myTasks.push_back(i);
@@ -50,8 +53,9 @@ int main( int argc, char* argv[])
 	}
 */
 
-//	deleteFile("kim");
+//	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
+//	sendFile("cogang","nguyenki@ensisun.imag.fr"); OK
 	MPI_Finalize();
 
 	return 0;
@@ -101,7 +105,7 @@ void executeAllMyTasks() {
 				tasks_done.push_back(*it);
 			}
 		} else {
-			// Demander le fichier necessaire
+			// TODO: Demander le fichier necessaire
 			
 		}
 	}
@@ -135,6 +139,7 @@ Master tasks
 ***********************/
 void master() {
 	int idTask;
+
 	while (tasksTodo>0) {
 		// Recevoir message des worker
 		receiveMessages();
@@ -156,9 +161,8 @@ MPI_Status receiveMessages() {
 	char* fileName;
 	MPI_Recv(&fileName, 1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &st);
 	int src = st.MPI_SOURCE;
-	string hostToSend;
 	if (st.MPI_TAG == NEED_FILE) {
-		sendFileToMaster(fileName,hostToSend);
+		sendFile(fileName,processName);
 	}
 
 	// Recevoir les autres demandes
@@ -297,7 +301,7 @@ void deleteFile(const string &fileName) {
 	}
 }
 
-void sendFileToMaster(const string &fileName, const string &hostname) {
+void sendFile(const string &fileName, const string &hostname) {
 	cout <<"Current directory:"<<getCurrentDirectory()<<endl;
 	string cmd = "scp "+fileName+" "+hostname+":~";
 	system(cmd.c_str());
@@ -382,7 +386,8 @@ void executeCommand(Rule* rule) {
 		}
 		cout << "WARNING: File" << rule->name << " has not existed yet" <<endl;
 	}
-	sendFileToMaster(rule->name,"");
+	// TODO:
+	sendFile(rule->name,"");
 }
 
 

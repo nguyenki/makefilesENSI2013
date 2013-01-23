@@ -74,7 +74,7 @@ MPI_Status receiveMessages();
 
 bool isAllDependantFilesExist(Rule* rule);
 
-void sendFileToMaster(const string &fileName, const string &hostname);
+void sendFile(const string &fileName, const string &hostname);
 
 bool isFileExist(const string &fileName);
 
