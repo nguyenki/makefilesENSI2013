@@ -56,7 +56,8 @@ void setIdRule(Rule* rule, int id) {
 }
 
 map<string, Rule*> rules;
-vector<Rule*> tasks; // Enregistrer l'ordre d'execution de tous les regles dans le Makefile
+vector<Rule*> tasks; // Enregistrer l'ordre d'execution de tous 
+les regles dans le Makefile
 
 // Chercher une regle using son nom. Retourner un nouveau regle si'il n'existe pas
 Rule *findRuleByName(const string &rule);

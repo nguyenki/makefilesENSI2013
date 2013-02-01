@@ -47,12 +47,13 @@ int main( int argc, char* argv[])
 		myTasks.push_back(i);
 		cout << "Machine:" << processName << " have to execute job:" << tasks[i]->name <<endl;
 	}
-
-	if (myRank==MASTER) {
-		master();
-	} else {
-		worker();
-	}
+	
+	printAllRule(tasks);
+//	if (myRank==MASTER) {
+//		master();
+//	} else {
+//		worker();
+//	}
 
 
 //	deleteFile("kim"); // OK
