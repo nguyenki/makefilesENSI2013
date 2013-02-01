@@ -143,19 +143,27 @@ Master tasks
 ***********************/
 void master() {
 	int idTask;
-	while (tasksTodo>0) {
-		cout << "In the while loop of MASTER: " << processName <<endl;
+
+//	while (tasksTodo>0) {
+//		cout << "In the while loop of MASTER: " << processName <<endl;
 		// Recevoir message des worker
 		// Faire les taches
-		executeAllMyTasks();
-		receiveMessages();
-
-	}
+//		executeAllMyTasks();
+//		receiveMessages();
+//	}
 
 	// Envoyer un broadcast pour informer que tous les taches sont finis
-	for (int i=1;i<nbM;i++) {
-		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
-	}
+//	for (int i=1;i<nbM;i++) {
+//		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
+//	}
+
+
+	// Send a task to each worker
+//	for (int idTask=0;i<tasksTodo;i++) {
+//		MPI_Send(idTask, 1, MPI_INT,  );
+//	}
+
+
 
 }
 
