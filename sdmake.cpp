@@ -41,17 +41,19 @@ int main( int argc, char* argv[])
 	tasksTodo = tasks.size();
 	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
 	MPI_Get_processor_name(processName, &len);
+	cout <<"Running in machine:" << processName <<endl;
 	// Distribuer les taches
 	for(int i=myRank;i<tasks.size();i+=nbM) {
 		myTasks.push_back(i);
+		cout << "Machine:" << processName << " have to execute job:" << tasks[i]->name <<endl;
 	}
 
-/*	if (myRank==MASTER) {
+	if (myRank==MASTER) {
 		master();
 	} else {
 		worker();
 	}
-*/
+
 
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
@@ -106,7 +108,7 @@ void executeAllMyTasks() {
 			}
 		} else {
 			// TODO: Demander le fichier necessaire
-			
+			MPI_Isend(&myRank,1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD, &request);
 		}
 	}
 	for(list<int>::const_iterator it = tasks_done.begin(); it!=tasks_done.end();++it) {
@@ -123,6 +125,9 @@ void worker() {
 	MPI_Status status;
 	int msg;
 	while (1) {
+		cout << "In the while loop of WORKER:  " << processName <<endl;
+		executeAllMyTasks();
+
 		// Recevoir un message du maitre
 		status = receiveMessages();
 		// Verifier le tag du message recu
@@ -130,7 +135,6 @@ void worker() {
 			return;
 		}
 		// Faire les taches
-		executeAllMyTasks();
 	}
 }
 
@@ -139,12 +143,13 @@ Master tasks
 ***********************/
 void master() {
 	int idTask;
-
 	while (tasksTodo>0) {
+		cout << "In the while loop of MASTER: " << processName <<endl;
 		// Recevoir message des worker
-		receiveMessages();
 		// Faire les taches
 		executeAllMyTasks();
+		receiveMessages();
+
 	}
 
 	// Envoyer un broadcast pour informer que tous les taches sont finis
@@ -176,9 +181,9 @@ MPI_Status receiveMessages() {
 			break;
 		}
 		case SENT_FILE: {
-			
+
 		}
-			
+
 	}
 
 	return status;
@@ -219,7 +224,6 @@ void parse(string &nameInputFile) {
 			string dependency;
 			while (line_temp >> dependency) {
 				addDependency(rule, dependency);
-				cout <<"Dependecy of "<< rule->name<<" : "<< dependency <<"\n" << endl;
   			}
 		} else {
 			rule->command.push_back(line);
@@ -305,6 +309,7 @@ void sendFile(const string &fileName, const string &hostname) {
 	cout <<"Current directory:"<<getCurrentDirectory()<<endl;
 	string cmd = "scp "+fileName+" "+hostname+":~";
 	system(cmd.c_str());
+//	MPI_Isend(&myRank, 1, MPI_INT, );
 	if (myRank!=MASTER) {
 		deleteFile(fileName);
 	}

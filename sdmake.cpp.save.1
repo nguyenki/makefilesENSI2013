@@ -1,0 +1,200 @@
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <cstring>
+#include <sstream>
+#include <map>
+#include <dirent.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
+#include <unistd.h>
+
+#include <mpi.h>
+#include "sdmake.h"
+
+using namespace std;
+
+//string inputFile=PREMIER;
+string inputFile="";
+int myRank;
+int nbM;
+char processName[MPI_MAX_PROCESSOR_NAME];
+char masterName[MPI_MAX_PROCESSOR_NAME];
+
+int main( int argc, char* argv[])
+{
+	cout <<"Distributed MakeFile"<<"\n";
+	int parseResult = getParameterCommandLine(argc,argv);
+	int len;
+	if (parseResult!=1) {
+		return -1;
+	}
+	cout<<"Last target:"<<target<<endl;
+	/****************************************************
+	 * Routine principale
+	 ****************************************************/
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+	parse(inputFile);
+	getTaskTodoFromRule(rules[target]);
+	tasksTodo = tasks.size();
+	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
+	MPI_Get_processor_name(processName, &len);
+	cout <<"Running in machine:" << processName <<endl;
+	// Distribuer les taches
+	for(int i=myRank;i<tasks.size();i+=nbM) {
+		myTasks.push_back(i);
+		cout << "Machine:" << processName << " have to execute job:" << tasks[i]->name <<endl;
+	}
+
+	if (myRank==MASTER) {
+		master();
+	} else {
+		worker();
+	}
+
+
+//	deleteFile("kim"); // OK
+//	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
+//	sendFile("cogang","nguyenki@ensisun.imag.fr"); OK
+	MPI_Finalize();
+
+	return 0;
+}
+
+
+Rule *findRuleByName(const string &rule) {
+	Rule* r = rules[rule];
+	if (r==NULL) {
+		cptRule++;
+		Rule* newR = new Rule(rule);
+		setIdRule(newR,cptRule);
+		rules[rule] = newR;
+		return newR;
+	} else {
+		return r;
+	}
+}
+
+void addDependency(Rule *rule, const string &dependencyName) {
+	Rule *newDependency = findRuleByName(dependencyName);
+	rule->dependences.push_back(newDependency);
+	rule->dpNames.push_back(dependencyName);
+	newDependency->dependants.push_back(rule);
+}
+
+
+void executeAllMyTasks() {
+	MPI_Request request;
+	list<int> tasks_done;
+	int done_task;
+	for (list<int>::const_iterator it = myTasks.begin(); it!=myTasks.end();++it) {
+		bool notHaveDependencies = tasks[(*it)]->dependences.size()==0;
+		if (notHaveDependencies) {
+			// Execute la commande
+			// Verifier si les fichiers dependants sont deja fournis par le maitre
+			bool isAbleToExecuteCmd = isAllDependantFilesExist(tasks[*it]);
+			if (isAbleToExecuteCmd) {
+				executeCommand(tasks[(*it)]);
+				// Envoyer a broadcast message a tous le monde
+				done_task = (*it);
+				for (int i=0;i<nbM;i++) {
+					if (i!=myRank) {
+						MPI_Isend(&done_task, 1, MPI_INT, i, FINISHED_TAG, MPI_COMM_WORLD, &request);
+					}
+				}
+				tasks_done.push_back(*it);
+			}
+		} else {
+			// TODO: Demander le fichier necessaire
+			MPI_Isend(&myRank,1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD, &request);
+		}
+	}
+	for(list<int>::const_iterator it = tasks_done.begin(); it!=tasks_done.end();++it) {
+		myTasks.remove(*it);
+	}
+}
+
+
+/*************************************
+Worker tasks
+**************************************/
+
+void worker() {
+	MPI_Status status;
+	int msg;
+	while (1) {
+		cout << "In the while loop of WORKER:  " << processName <<endl;
+		executeAllMyTasks();
+
+		// Recevoir un message du maitre
+		status = receiveMessages();
+		// Verifier le tag du message recu
+		if (status.MPI_TAG == DIE_TAG) {
+			return;
+		}
+		// Faire les taches
+	}
+}
+
+/***********************
+Master tasks
+***********************/
+void master() {
+	int idTask;
+	while (tasksTodo>0) {
+		cout << "In the while loop of MASTER: " << processName <<endl;
+		// Recevoir message des worker
+		// Faire les taches
+		executeAllMyTasks();
+		receiveMessages();
+
+	}
+
+	// Envoyer un broadcast pour informer que tous les taches sont finis
+	for (int i=1;i<nbM;i++) {
+		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
+	}
+
+}
+
+
+MPI_Status receiveMessages() {
+	// Recevoir la demande de tache
+	MPI_Status st;
+	char* fileName;
+	MPI_Recv(&fileName, 1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &st);
+	int src = st.MPI_SOURCE;
+	if (st.MPI_TAG == NEED_FILE) {
+		sendFile(fileName,processName);
+	}
+
+	// Recevoir les autres demandes
+	MPI_Status status;
+	int msg;
+	MPI_Recv(&msg, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+	int origin = status.MPI_SOURCE;
+	switch(status.MPI_TAG) {
+		case FINISHED_TAG: {
+			maskTaskAsFinished(tasks[msg]);
+			break;
+		}
+		case SENT_FILE: {
+
+		}
+
+	}
+
+	return status;
+}
+void parse(string &nameInputFile) {
+	char line[LINE_LENGTH];
+	string ruleName;
+	Rule *rule;
+	bool getLastTarget = true;
+
+	ifstream inFile;
+	inFile.open(nameInputFile.c_str());
+	if (inFile.bad()) {
+		cerr <<"Bad bit is set in Makefile"<< endl;
