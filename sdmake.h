@@ -13,7 +13,7 @@
 #include <mpi.h>
 
 #define BAD_FILE -2
-#define LINE_LENGTH 1024
+#define LINE_LENGTH 65556
 #define MASTER 0
 #define REQUEST_TAG 11
 #define FINISHED_TAG 8

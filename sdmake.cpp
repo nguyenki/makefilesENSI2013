@@ -47,6 +47,12 @@ int main( int argc, char* argv[])
 	MPI_Get_processor_name(processName, &len);
 	cout <<"Running in machine:" << processName << "  with rank: " << myRank <<endl;
 
+	int ind = 0;
+	for (int i=0;i<nbM;i++) {
+		ind = getTaskTodo();
+		cout << "get next task:" << tasks[ind] <<endl;
+	}
+/*
 
 	if (myRank==MASTER) {
 		cout << "DEBUG: ENTERING IN MASTER" << endl;
@@ -55,6 +61,7 @@ int main( int argc, char* argv[])
 		worker();
 	}
 
+*/
 
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
@@ -97,13 +104,18 @@ void addDependency(Rule *rule, const string &dependencyName) {
 int getTaskTodo() {
 	int taskTodo = -1;
 	int indice = 0;
-	for (vector<Rule*>::const_iterator it=tasks.begin();it!=tasks.end();it++) {
-		if ((*it)->isFinished ==false) {
-			taskTodo = indice;
-			break;
+	bool foundTask = false;
+	for (vector<Rule*>::const_iterator it=tasks.end();it!=tasks.begin();it--) {
+		if (!foundTask) {
+			if ((*it)->isExecute==false) {
+				taskTodo = indice;
+				tasks[indice]->isExecute = true;
+				foundTask = true;
+			}
 		}
 		indice++;
 	}
+
 	return taskTodo;
 }
 
@@ -198,7 +210,7 @@ void master() {
 				for (list<Rule*>::const_iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
 					bool fileExist = isFileExist((*it)->name);
 					if (fileExist) {
-						sendFile((*it)->name, getHostName(source));
+						sendFile((*it)->name,getHostName(source));
 					}
 				}
 				break;
@@ -224,7 +236,6 @@ void parse(string &nameInputFile) {
 	char line[LINE_LENGTH];
 	string ruleName;
 	Rule *rule;
-	bool getLastTarget = true;
 
 	ifstream inFile;
 	inFile.open(nameInputFile.c_str());
@@ -247,9 +258,8 @@ void parse(string &nameInputFile) {
 				continue;
 			ruleName = ruleName.substr(0, ruleName.size()-1);
 
-			if(getLastTarget) {
+			if (target=="") {
 				target = ruleName;
-				getLastTarget = false;
 			}
 
 			rule = findRuleByName(ruleName);
@@ -280,6 +290,9 @@ int getParameterCommandLine(int argc, char* argv[]) {
 			string temp = argv[2];
 			if (temp=="Makefile") {
 				inputFile=temp;
+				if (argc==4) {
+					target = argv[3];
+				}
 				return 1;
 			} else {
 				return -1;
@@ -419,20 +432,19 @@ void executeCommand(Rule* rule) {
         vector<string> cmds = rule->command;
         for (vector<string>::const_iterator it = cmds.begin(); it!= cmds.end(); ++it) {
                 string cmd = (*it);
-                cout<< "Running command:" << cmd << "\n" <<endl;
-     		string t = "touch QQQ.txt";
-		system(t.c_str());
+                cout<< "Running command:" << cmd << " in rank:" << myRank<< "\n" <<endl;
 	        system(cmd.c_str());
         }
-	while(1) {
-		if (isFileExist(rule->name)) {
-			 break;
-			cout << "FILE: " << rule->name << " existed"<<endl;
-		}
-		cout << "WARNING: File  " << rule->name << " has not existed yet" <<endl;
-	}
+
+//	while(1) {
+//		if (!isFileExist(rule->name)) {
+//			 break;
+//			cout << "FILE: " << rule->name << " existed"<<endl;
+//		}
+//		cout << "WARNING: File  " << rule->name << " has not existed yet" <<endl;
+//	}
 	
-	sendFile(rule->name, getHostName(0));
+//	sendFile(rule->name, getHostName(0));
 }
 
 void printAllTasks(vector<Rule*> tasks) {
