@@ -45,10 +45,11 @@ int main( int argc, char* argv[])
 	tasksTodo = tasks.size();
 	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
 	MPI_Get_processor_name(processName, &len);
-	cout <<"Running in machine:" << processName <<endl;
+	cout <<"Running in machine:" << processName << "  with rank: " << myRank <<endl;
 
 
 	if (myRank==MASTER) {
+		cout << "DEBUG: ENTERING IN MASTER" << endl;
 		master();
 	} else {
 		worker();
@@ -58,7 +59,6 @@ int main( int argc, char* argv[])
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
 //	sendFile("cogang","nguyenki@ensisun.imag.fr"); OK
-//	MPI_Finalize();
 
 /*
 
@@ -67,6 +67,8 @@ int main( int argc, char* argv[])
 
 	cout << "Host:" << getHostName(1) <<endl;		
 */
+	MPI_Finalize();
+
 	return 0;
 }
 
@@ -127,6 +129,7 @@ Worker tasks
 **************************************/
 
 void worker() {
+	cout << "ENTERING ESCLAVE: " << processName <<endl;
 	MPI_Status status;
 	int work;
 	int result;
@@ -171,6 +174,7 @@ void master() {
 	// Send a task to each worker
 	for (int i=1;i<nbHost;i++) {
 		work = getTaskTodo();
+		cout << "DISTRIBUTED TASKS " << tasks[work]->name << " TO " << i   <<endl;
 		MPI_Send(&work, 1, MPI_INT, i, WORK_TAG, MPI_COMM_WORLD);
 	}
 
