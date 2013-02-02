@@ -141,8 +141,16 @@ void worker() {
 		if (status.MPI_TAG == DIE_TAG) {
 			return;
 		}
-		// Faire les taches a faire
-				
+
+		if (status.MPI_TAG == SENT_FILE) {
+			cout << "Receive file" << tasks[work]->name << "from master" <<endl;
+		}
+		
+		bool allDependeciesExist = isAllDependantFilesExist(tasks[work]);
+		if (allDependeciesExist) {	
+			// Faire les taches a faire
+			executeCommand(tasks[work]);		
+		}
 
 	}
 }
@@ -188,7 +196,7 @@ void master() {
 						sendFile((*it)->name, getHostName(source));
 					}
 				}
-				
+				break;
 			}
 		}
 
@@ -294,6 +302,9 @@ bool isAllDependantFilesExist(Rule* rule) {
 	bool allDependantFileExist = true;
 	for(list<string>::const_iterator it = rule->dpNames.begin(); it!=rule->dpNames.end();++it) {
 		bool fileExist = isFileExist(*it);
+		if (fileExist == false) {
+			sendDemandFile(*it);
+		}
 		allDependantFileExist = allDependantFileExist && fileExist;
 	}
 	return allDependantFileExist;
@@ -319,7 +330,7 @@ void sendDemandFile(const string &fileName) {
 void deleteFile(const string &fileName) {
 	string cmd = "rm "+fileName;
 	system(cmd.c_str());
-	if (isFileExist(fileName)) {
+	if (!isFileExist(fileName)) {
 		cout <<"File: "<<fileName <<"  is deleted" <<endl;
 	} else {
 		cout << "Unable to delete file: "<<fileName<<endl;
@@ -327,11 +338,14 @@ void deleteFile(const string &fileName) {
 }
 
 void sendFile(const string &fileName, const string &hostname) {
+	MPI_Request request;
 	cout <<"Current directory:"<<getCurrentDirectory()<<endl;
 	string cmd = "scp "+fileName+" "+hostname+":~";
 	system(cmd.c_str());
 	if (myRank!=MASTER) {
 		deleteFile(fileName);
+	} else {
+		MPI_Isend(&myRank,1, MPI_INT, MASTER, SENT_FILE, MPI_COMM_WORLD, &request);
 	}
 }
 

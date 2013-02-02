@@ -87,6 +87,8 @@ bool isAllDependantFilesExist(Rule* rule);
 
 void sendFile(const string &fileName, const string &hostname);
 
+void sendDemandFile(const string &fileName);
+
 bool isFileExist(const string &fileName);
 
 void deleteFile(const string &fileName);
