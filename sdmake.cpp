@@ -30,7 +30,6 @@ int main( int argc, char* argv[])
 	if (parseResult!=1) {
 		return -1;
 	}
-	cout<<"Last target:"<<target<<endl;
 
 	/****************************************************
 	 * Routine principale
@@ -293,7 +292,7 @@ void getTaskTodoFromRule(Rule* rule) {
 		}
 	}
 	rule->idRule = tasks.size(); // id Regle est assigne par priorite
-	cout <<"Add tasks to list:" << rule->name <<endl;
+	//cout <<"Add tasks to list:" << rule->name <<endl;
 	tasks.push_back(rule);
 }
 
