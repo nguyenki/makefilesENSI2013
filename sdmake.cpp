@@ -36,7 +36,7 @@ int main( int argc, char* argv[])
 	 * Routine principale
 	 ****************************************************/
 
--	MPI_Init(&argc, &argv);
+	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	parse(inputFile);
 	getTaskTodoFromRule(rules[target]);
