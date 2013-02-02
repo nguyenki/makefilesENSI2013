@@ -24,6 +24,9 @@
 
 using namespace std;
 
+string myHostName = "myhosts";
+vector<string> allHostNames;
+
 int cptRule = 0;
 
 
@@ -72,6 +75,13 @@ int getTaskTodo();
 // Execute a task
 void executeTask();
 
+// Retirer le nom du maitre du fichier myhosts
+string getMasterName(const string &hostFileName);
+
+// Recevoir tous les noms de hote
+void getAllHostName(const string &hostFileName);
+
+string getHostName(int rank);
 
 bool isAllDependantFilesExist(Rule* rule);
 
