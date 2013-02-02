@@ -31,6 +31,7 @@ int main( int argc, char* argv[])
 		return -1;
 	}
 	cout<<"Last target:"<<target<<endl;
+
 	/****************************************************
 	 * Routine principale
 	 ****************************************************/
@@ -38,28 +39,26 @@ int main( int argc, char* argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	parse(inputFile);
 	getTaskTodoFromRule(rules[target]);
+
+//	printAllTasks(tasks);
+
 	tasksTodo = tasks.size();
 	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
 	MPI_Get_processor_name(processName, &len);
 	cout <<"Running in machine:" << processName <<endl;
-	// Distribuer les taches
-	for(int i=myRank;i<tasks.size();i+=nbM) {
-		myTasks.push_back(i);
-		cout << "Machine:" << processName << " have to execute job:" << tasks[i]->name <<endl;
+
+
+	if (myRank==MASTER) {
+		master();
+	} else {
+		worker();
 	}
-	
-	printAllRule(tasks);
-//	if (myRank==MASTER) {
-//		master();
-//	} else {
-//		worker();
-//	}
 
 
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
 //	sendFile("cogang","nguyenki@ensisun.imag.fr"); OK
-	MPI_Finalize();
+//	MPI_Finalize();
 
 	return 0;
 }
@@ -83,6 +82,20 @@ void addDependency(Rule *rule, const string &dependencyName) {
 	rule->dependences.push_back(newDependency);
 	rule->dpNames.push_back(dependencyName);
 	newDependency->dependants.push_back(rule);
+}
+
+
+int getTaskTodo() {
+	int taskTodo = null;
+	int indice = 0;
+	for (vector<Rule*>::const_iterator it=tasks.begin();it!=task.end();it++) {
+		if ((*it)->isFinished ==false) {
+			taskTodo = indice;
+			break;
+		}
+		indice++;
+	}
+	return taskTodo;
 }
 
 
@@ -117,6 +130,25 @@ void executeAllMyTasks() {
 	}
 }
 
+void executeTask(int taskToExecute) {
+	MPI_Request request;
+	bool notHaveDependencies = tasks[taskToExecute]->dependences.size()==0;
+	if (notHaveDependencies) {
+		// Execute la commande
+		// Verifier si les fichiers dependants sont deja fournis par le maitre
+		bool isAbleToExecuteCmd = isAllDependantFilesExist(tasks[*it]);
+		if (isAbleToExecuteCmd) {
+			executeCommand(tasks[taskToExecute]);
+		} else {
+			// Denader le fichier necessaire
+			MPI_Send(&taskToExecute, 1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD, &request);
+		}
+	}
+
+
+}
+
+
 
 /*************************************
 Worker tasks
@@ -124,18 +156,21 @@ Worker tasks
 
 void worker() {
 	MPI_Status status;
-	int msg;
+	int work;
+	int result;
 	while (1) {
 		cout << "In the while loop of WORKER:  " << processName <<endl;
-		executeAllMyTasks();
 
-		// Recevoir un message du maitre
-		status = receiveMessages();
+		// Recevoir des taches a faire
+		MPI_Recv(&work, 1, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
 		// Verifier le tag du message recu
 		if (status.MPI_TAG == DIE_TAG) {
 			return;
 		}
-		// Faire les taches
+		// Faire les taches a faire
+		
+
 	}
 }
 
@@ -143,60 +178,56 @@ void worker() {
 Master tasks
 ***********************/
 void master() {
-	int idTask;
+	int work;
+	int result; // The result received from the master
+	int source;
+	int nbHost;
+	MPI_Status status;
 
-//	while (tasksTodo>0) {
-//		cout << "In the while loop of MASTER: " << processName <<endl;
-		// Recevoir message des worker
-		// Faire les taches
-//		executeAllMyTasks();
-//		receiveMessages();
-//	}
-
-	// Envoyer un broadcast pour informer que tous les taches sont finis
-//	for (int i=1;i<nbM;i++) {
-//		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
-//	}
+	MPI_COMM_size(MPI_COMM_WORLD,&nbHost);
 
 
 	// Send a task to each worker
-//	for (int idTask=0;i<tasksTodo;i++) {
-//		MPI_Send(idTask, 1, MPI_INT,  );
-//	}
+	for (int i=1;i<nbHost;i++) {
+		work = getTaskTodo();
+		MPI_Send(&work, 1, MPI_INT, i, WORK_TAG, MPI_COMM_WORLD);
+	}
 
 
+
+	work = getTaskTodo();
+	while (work!=null) {
+		MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,&status);
+		source = status.MPI_SOURCE;
+		switch(status.MPI_TAG) {
+			case FINISHED_TAG: {
+				maskTaskAsFinished(tasks[result]);
+				// Envoyer nouveau tache pour esclave
+				MPI_Send(&work, 1, MPI_INT, source, WORK_TAG, MPI_COMM_WORLD);
+				break;
+			}
+
+			case NEED_FILE: {
+				
+			}
+		}
+
+		work = getTaskTodo();
+	}
+
+	// Tous les taches sont faites. Alors, on recoit tous les derieres resultats d'esclave
+	for (int i=1; i<nbHost;i++) {
+		MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,&status);
+	}
+
+	// Envoyer un broadcast pour informer que tous les taches sont finis
+	for (int i=1;i<nbHost;i++) {
+              MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
+	}
 
 }
 
 
-MPI_Status receiveMessages() {
-	// Recevoir la demande de tache
-	MPI_Status st;
-	char* fileName;
-	MPI_Recv(&fileName, 1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &st);
-	int src = st.MPI_SOURCE;
-	if (st.MPI_TAG == NEED_FILE) {
-		sendFile(fileName,processName);
-	}
-
-	// Recevoir les autres demandes
-	MPI_Status status;
-	int msg;
-	MPI_Recv(&msg, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-	int origin = status.MPI_SOURCE;
-	switch(status.MPI_TAG) {
-		case FINISHED_TAG: {
-			maskTaskAsFinished(tasks[msg]);
-			break;
-		}
-		case SENT_FILE: {
-
-		}
-
-	}
-
-	return status;
-}
 void parse(string &nameInputFile) {
 	char line[LINE_LENGTH];
 	string ruleName;
@@ -274,6 +305,7 @@ void getTaskTodoFromRule(Rule* rule) {
 		}
 	}
 	rule->idRule = tasks.size(); // id Regle est assigne par priorite
+	cout <<"Add tasks to list:" << rule->name <<endl;
 	tasks.push_back(rule);
 }
 
@@ -402,6 +434,12 @@ void executeCommand(Rule* rule) {
 	}
 	// TODO:
 	sendFile(rule->name,"");
+}
+
+void printAllTasks(vector<Rule*> tasks) {
+	for (vector<Rule*>::const_iterator it=tasks.begin(); it!=tasks.end();++it) {
+		printARule((*it));
+	}
 }
 
 

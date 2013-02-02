@@ -20,14 +20,10 @@
 #define DIE_TAG -1
 #define NEED_FILE 89
 #define SENT_FILE 23
+#define WORK_TAG 7
 
 using namespace std;
 
-const string MATRIX = "TestPrograms/matrix/";
-const string PREMIER = "/TestPrograms/premier/";
-const string BLENDER_249 = "/TestPrograms/blender_2.49/";
-const string BLENDER_259 = "/TestPrograms/blender_2.59/";
-const string TEST = "/TestPrograms/test/";
 int cptRule = 0;
 
 
@@ -70,7 +66,12 @@ void executeCommand(Rule* rule);
 // Executer les tasks d'une machine
 void executeAllMyTasks();
 
-MPI_Status receiveMessages();
+// Get a task for the worker
+int getTaskTodo();
+
+// Execute a task
+void executeTask();
+
 
 bool isAllDependantFilesExist(Rule* rule);
 
@@ -97,7 +98,7 @@ void printAllCommand(const vector<string> &cmd);
 
 void printARule(Rule* rule);
 
-void printAllTask();
+void printAllTasks(vector<Rule*>);
 
 void printAllRule(map<string,Rule*> rules);
 
