@@ -148,7 +148,8 @@ void worker() {
 		bool allDependeciesExist = isAllDependantFilesExist(tasks[work]);
 		if (allDependeciesExist) {	
 			// Faire les taches a faire
-			executeCommand(tasks[work]);		
+			cout << "RUNNING CMD IN WORKER" <<endl;
+			executeCommand(tasks[work]);
 		}
 
 	}
@@ -415,14 +416,16 @@ void executeCommand(Rule* rule) {
         for (vector<string>::const_iterator it = cmds.begin(); it!= cmds.end(); ++it) {
                 string cmd = (*it);
                 cout<< "Running command:" << cmd << "\n" <<endl;
-                system(cmd.c_str());
+     		string t = "touch QQQ.txt";
+		system(t.c_str());
+	        system(cmd.c_str());
         }
 	while(1) {
 		if (isFileExist(rule->name)) {
 			 break;
 			cout << "FILE: " << rule->name << " existed"<<endl;
 		}
-		cout << "WARNING: File" << rule->name << " has not existed yet" <<endl;
+		cout << "WARNING: File  " << rule->name << " has not existed yet" <<endl;
 	}
 	
 	sendFile(rule->name, getHostName(0));

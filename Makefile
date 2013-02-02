@@ -2,8 +2,8 @@ list.txt:	list1.txt list2.txt list3.txt list4.txt list5.txt list6.txt list7.txt 
 	cp list1.txt list.txt ; cat list2.txt >> list.txt ; cat list3.txt >> list.txt ; cat list4.txt >> list.txt ; cat list5.txt >> list.txt ; cat list6.txt >> list.txt ; cat list7.txt >> list.txt ; cat list8.txt >> list.txt ; cat list9.txt >> list.txt ; cat list10.txt >> list.txt ; cat list11.txt >> list.txt ; cat list12.txt >> list.txt ; cat list13.txt >> list.txt ; cat list14.txt >> list.txt ; cat list15.txt >> list.txt ; cat list16.txt >> list.txt ; cat list17.txt >> list.txt ; cat list18.txt >> list.txt ; cat list19.txt >> list.txt ; cat list20.txt >> list.txt ;
 
 list1.txt:
-	premier 2 `echo 1*200000000/20-1 |bc` > list1.txt
-
+#	premier 2 `echo 1*200000000/20-1 |bc` > list1.txt
+	premier 2 3 > list1.txt
 list2.txt:
 	premier `echo 1*200000000/20 |bc` `echo 2*200000000/20-1 |bc` > list2.txt
 
