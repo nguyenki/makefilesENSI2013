@@ -185,6 +185,7 @@ void master() {
 				maskTaskAsFinished(tasks[result]);
 				// Envoyer nouveau tache pour esclave
 				MPI_Send(&work, 1, MPI_INT, source, WORK_TAG, MPI_COMM_WORLD);
+				work = getTaskTodo();
 				break;
 			}
 
@@ -199,8 +200,7 @@ void master() {
 				break;
 			}
 		}
-
-		work = getTaskTodo();
+		
 	}
 
 	// Tous les taches sont faites. Alors, on recoit tous les derieres resultats d'esclave
