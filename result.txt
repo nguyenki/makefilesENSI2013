@@ -1,0 +1,58 @@
+Distributed MakeFile
+Distributed MakeFile
+Distributed MakeFile
+Distributed MakeFile
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 0
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 1
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 2
+ENTERING MASTER...........................
+ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:1
+In the while loop of WORKER:  1
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 3
+ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:2
+In the while loop of WORKER:  2
+ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:3
+In the while loop of WORKER:  3
+DISTRIBUTED TASKS list.txt TO 1
+DISTRIBUTED TASKS list4.txt TO 2
+DISTRIBUTED TASKS list3.txt TO 3
+CHECKING FILE: list1.txt
+RUNNING CMD IN WORKER
+RUNNING CMD IN WORKER
+Running command:	premier 17 300 > list4.txt in rank:2
+
+Running command:	premier 7 35 > list3.txt in rank:3
+
+CHECKING FILE: list2.txt
+CHECKING FILE: list3.txt
+CHECKING FILE: list4.txt
+In the while loop of WORKER:  1
+ENTERING NEED FILE..................: FROM:1
+ESCLAVE:3FINISHED TASK:list3.txt
+ESCLAVE:2FINISHED TASK:list4.txt
+TASK NUMBER RESTE :5
+ENTERING NEED FILE..................: FROM:1
+TASK NUMBER RESTE :5
+MASK TASK:list3.txt  AS FINISHED
+In the while loop of WORKER:  3
+In the while loop of WORKER:  2
+RUNNING CMD IN WORKER
+Running command:	premier 2 51 > list2.txt in rank:3
+
+MASTER SEND TASK: list2.txt  TO   3
+TASK NUMBER RESTE :4
+MASK TASK:list4.txt  AS FINISHED
+MASTER SEND TASK: list1.txt  TO   2
+TASK NUMBER RESTE :3
+RUNNING CMD IN WORKER
+Running command:	premier 2 11 > list1.txt in rank:2
+
+MASK TASK:list2.txt  AS FINISHED
+ESCLAVE:3FINISHED TASK:list2.txt
+In the while loop of WORKER:  3
+TASK NUMBER RESTE :2
+ESCLAVE:2FINISHED TASK:list1.txt
+MASK TASK:list1.txt  AS FINISHED
+In the while loop of WORKER:  2
+TASK NUMBER RESTE :1
+4 total processes killed (some possibly by mpirun during cleanup)
