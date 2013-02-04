@@ -259,7 +259,7 @@ void master() {
 	int all_done = 123;
 	for (int i=1;i<nbHost;i++) {
 		cout << "SEND DIE TASK TO RANK:" << i <<endl;
-		MPI_Send(&all_done, 1, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
+		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
 	}
 
 }
