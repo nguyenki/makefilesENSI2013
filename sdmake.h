@@ -15,7 +15,7 @@
 #define BAD_FILE -2
 #define LINE_LENGTH 65556
 #define MASTER 0
-#define REQUEST_TAG 11
+#define NOT_EXIST_TAG 11
 #define FINISHED_TAG 8
 #define DIE_TAG -1
 #define NEED_FILE 89

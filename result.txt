@@ -3,56 +3,125 @@ Distributed MakeFile
 Distributed MakeFile
 Distributed MakeFile
 Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 0
-Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 1
-Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 2
 ENTERING MASTER...........................
-ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:1
-In the while loop of WORKER:  1
+DISTRIBUTED TASKS list.txt TO 1
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 1
 Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 3
-ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:2
-In the while loop of WORKER:  2
 ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:3
 In the while loop of WORKER:  3
-DISTRIBUTED TASKS list.txt TO 1
+Running in machine:kimthuatnguyen-VPCEB45FG  with rank: 2
+ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:2
 DISTRIBUTED TASKS list4.txt TO 2
 DISTRIBUTED TASKS list3.txt TO 3
-CHECKING FILE: list1.txt
-RUNNING CMD IN WORKER
-RUNNING CMD IN WORKER
+ENTERING ESCLAVE: kimthuatnguyen-VPCEB45FGWITH RANK:1
+RUNNING CMD IN WORKER WITH ID:3
+Running command:	premier 7 35 > list3.txt in rank:3
+In the while loop of WORKER:  2
+
+RUNNING CMD IN WORKER WITH ID:2
 Running command:	premier 17 300 > list4.txt in rank:2
 
-Running command:	premier 7 35 > list3.txt in rank:3
-
-CHECKING FILE: list2.txt
-CHECKING FILE: list3.txt
-CHECKING FILE: list4.txt
 In the while loop of WORKER:  1
-ENTERING NEED FILE..................: FROM:1
-ESCLAVE:3FINISHED TASK:list3.txt
-ESCLAVE:2FINISHED TASK:list4.txt
-TASK NUMBER RESTE :5
-ENTERING NEED FILE..................: FROM:1
-TASK NUMBER RESTE :5
+--------FILE NOT EXIST-----list1.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list1.txt
+--------FILE NOT EXIST-----list2.txtRANK:1
+FILE:list1.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+ENTERING NEED FILE..................: FROM:1:RESULT:list2.txt
+FILE:list2.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+--------FILE NOT EXIST-----list3.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list3.txt
+FILE:list3.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+--------FILE NOT EXIST-----list4.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list4.txt
+In the while loop of WORKER:  1
+File not exist yet
+FILE:list4.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+--------FILE NOT EXIST-----list1.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list1.txt
+FILE:list1.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+--------FILE NOT EXIST-----list2.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list2.txt
+FILE:list2.txt DOESN'T EXISTE
+TASK NUMBER LEFT :5
+--------FILE  EXISTED-----list3.txtRANK:1
+--------FILE  EXISTED-----list4.txtRANK:1
+In the while loop of WORKER:  1
+File not exist yet
+--------FILE NOT EXIST-----list1.txtRANK:1
 MASK TASK:list3.txt  AS FINISHED
+ESCLAVE:3FINISHED TASK:list3.txt
 In the while loop of WORKER:  3
+ESCLAVE:2FINISHED TASK:list4.txt
 In the while loop of WORKER:  2
-RUNNING CMD IN WORKER
-Running command:	premier 2 51 > list2.txt in rank:3
+RUNNING CMD IN WORKER WITH ID:3
+Running command:MASTER SEND TASK: list2.txt  TO   3
+TASK NUMBER LEFT :4
+	premier 2 51 > list2.txt in rank:3
 
-MASTER SEND TASK: list2.txt  TO   3
-TASK NUMBER RESTE :4
+ENTERING NEED FILE..................: FROM:1:RESULT:list1.txt
+--------FILE NOT EXIST-----list2.txtRANK:1
+FILE:list1.txt DOESN'T EXISTE
+TASK NUMBER LEFT :4
 MASK TASK:list4.txt  AS FINISHED
-MASTER SEND TASK: list1.txt  TO   2
-TASK NUMBER RESTE :3
-RUNNING CMD IN WORKER
-Running command:	premier 2 11 > list1.txt in rank:2
+RUNNING CMD IN WORKER WITH ID:2
+Running command:MASTER SEND TASK: list1.txt  TO   2
+TASK NUMBER LEFT :3
+ENTERING NEED FILE..................: FROM:1:RESULT:list2.txt
+	premier 2 11 > list1.txt in rank:2
+
+FILE:list2.txt DOESN'T EXISTE
+TASK NUMBER LEFT :3
+--------FILE  EXISTED-----list3.txtRANK:1
+--------FILE  EXISTED-----list4.txtRANK:1
+In the while loop of WORKER:  1
+File not exist yet
+--------FILE NOT EXIST-----list1.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list1.txt
+FILE:list1.txt DOESN'T EXISTE
+TASK NUMBER LEFT :3
+--------FILE NOT EXIST-----list2.txtRANK:1
+ENTERING NEED FILE..................: FROM:1:RESULT:list2.txt
+FILE:list2.txtEXISTE
+TASK NUMBER LEFT :3
+--------FILE  EXISTED-----list3.txtRANK:1
+--------FILE  EXISTED-----list4.txtRANK:1
+In the while loop of WORKER:  1
+File not exist yet
+--------FILE  EXISTED-----list1.txtRANK:1
+--------FILE  EXISTED-----list2.txtRANK:1
+--------FILE  EXISTED-----list3.txtRANK:1
+--------FILE  EXISTED-----list4.txtRANK:1
+RUNNING CMD IN WORKER WITH ID:1
+Running command:	cp list1.txt list.txt ; cat list2.txt >> list.txt ; cat list3.txt >> list.txt ; cat list4.txt >> list.txt ; in rank:1
 
 MASK TASK:list2.txt  AS FINISHED
+TASK NUMBER LEFT :2
 ESCLAVE:3FINISHED TASK:list2.txt
 In the while loop of WORKER:  3
-TASK NUMBER RESTE :2
 ESCLAVE:2FINISHED TASK:list1.txt
-MASK TASK:list1.txt  AS FINISHED
 In the while loop of WORKER:  2
-TASK NUMBER RESTE :1
-4 total processes killed (some possibly by mpirun during cleanup)
+MASK TASK:list1.txt  AS FINISHED
+TASK NUMBER LEFT :1
+ESCLAVE:1FINISHED TASK:list.txt
+MASK TASK:list.txt  AS FINISHED
+TASK NUMBER LEFT :0
+ALL TASK DONE .....................
+SEND DIE TASK TO RANK:1
+In the while loop of WORKER:  1
+File not exist yet
+In the while loop of WORKER:  1
+File not exist yet
+In the while loop of WORKER:  1
+File not exist yet
+In the while loop of WORKER:  1
+File not exist yet
+In the while loop of WORKER:  1
+File not exist yet
+In the while loop of WORKER:  1
+Receive filelist2.txtfrom master
+In the while loop of WORKER:  1
