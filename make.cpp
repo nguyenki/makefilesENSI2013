@@ -236,7 +236,7 @@ void master() {
 				bool fileExist = isFileExist(tasks[result]->name);
 
 					if (fileExist) {
-						sendFile(tasks[result]->name,getHostName(source));
+					//	sendFile(tasks[result]->name,getHostName(source));
 						cout << "SENT FILE:" << tasks[result]->name << "TO HOST:" << getHostName(source) <<endl;
 						MPI_Send(&result, 1, MPI_INT, source, SENT_FILE, MPI_COMM_WORLD);
 					} else {
@@ -484,7 +484,7 @@ void executeCommand(Rule* rule) {
 
 	rule->isFinished = true;
 	
-	sendFile(rule->name, getHostName(0));
+//	sendFile(rule->name, getHostName(0));
 	int result = rule->idRule;
 	MPI_Send(&result, 1, MPI_INT, MASTER, FINISHED_TAG, MPI_COMM_WORLD);
 	cout << "ESCLAVE:" << myRank << "FINISHED TASK:" << tasks[result]->name  << endl;
