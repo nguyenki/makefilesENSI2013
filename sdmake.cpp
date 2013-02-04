@@ -45,6 +45,8 @@ int main( int argc, char* argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &nbM);
 	MPI_Get_processor_name(processName, &len);
 	cout <<"Running in machine:" << processName << "  with rank: " << myRank <<endl;
+	getAllHostName(myHostName);
+//	cout << "MASTER NAME:" << getHostName(0) <<endl;
 
 
 	if (myRank==MASTER) {
@@ -53,8 +55,8 @@ int main( int argc, char* argv[])
 		worker();
 	}
 
-*/
-	cout <<"CURRENT DIRECTORY:" << getCurrentDirectory() <<endl;	
+
+
 
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
@@ -232,14 +234,13 @@ void master() {
 				bool fileExist = isFileExist(tasks[result]->name);
 
 					if (fileExist) {
-						sendFile((*it)->name,getHostName(source));
-						cout << "FILE:" << tasks[result]->name << "EXISTE" <<endl;
+						sendFile(tasks[result]->name,getHostName(source));
+						cout << "SENT FILE:" << tasks[result]->name << "TO HOST:" << getHostName(source) <<endl;
 						MPI_Send(&result, 1, MPI_INT, source, SENT_FILE, MPI_COMM_WORLD);
 					} else {
 						cout << "FILE:" << tasks[result]->name << " DOESN'T EXISTE" <<endl;
 						MPI_Send(&result, 1, MPI_INT, source, NOT_EXIST_TAG, MPI_COMM_WORLD);
 					}
-				
 				break;
 			}
 		}
@@ -262,7 +263,6 @@ void master() {
 		cout << "SEND DIE TASK TO RANK:" << i <<endl;
 		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
 	}
-
 }
 
 
@@ -405,6 +405,7 @@ void sendFile(const string &fileName, const string &hostname) {
 	string currentDirectory = getCurrentDirectory();
 	cout <<"Current directory:"<<currentDirectory<<endl;
 	string cmd = "scp "+fileName+" "+hostname+":"+currentDirectory;
+	cout << "SENT FILE" << fileName << "TO:" << hostname <<endl;
 	system(cmd.c_str());
 	if (myRank!=MASTER) {
 		deleteFile(fileName);
