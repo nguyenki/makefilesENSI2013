@@ -30,7 +30,7 @@ int main( int argc, char* argv[])
 	if (parseResult!=1) {
 		return -1;
 	}
-
+/*
 	/****************************************************
 	 * Routine principale
 	 ****************************************************/
@@ -53,7 +53,8 @@ int main( int argc, char* argv[])
 		worker();
 	}
 
-
+*/
+	cout <<"CURRENT DIRECTORY:" << getCurrentDirectory() <<endl;	
 
 //	deleteFile("kim"); // OK
 //	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
@@ -231,7 +232,7 @@ void master() {
 				bool fileExist = isFileExist(tasks[result]->name);
 
 					if (fileExist) {
-						//sendFile((*it)->name,getHostName(source));
+						sendFile((*it)->name,getHostName(source));
 						cout << "FILE:" << tasks[result]->name << "EXISTE" <<endl;
 						MPI_Send(&result, 1, MPI_INT, source, SENT_FILE, MPI_COMM_WORLD);
 					} else {
@@ -401,13 +402,12 @@ void deleteFile(const string &fileName) {
 
 void sendFile(const string &fileName, const string &hostname) {
 	MPI_Request request;
-	cout <<"Current directory:"<<getCurrentDirectory()<<endl;
-	string cmd = "scp "+fileName+" "+hostname+":~";
+	string currentDirectory = getCurrentDirectory();
+	cout <<"Current directory:"<<currentDirectory<<endl;
+	string cmd = "scp "+fileName+" "+hostname+":"+currentDirectory;
 	system(cmd.c_str());
 	if (myRank!=MASTER) {
 		deleteFile(fileName);
-	} else { // BUG
-		MPI_Isend(&myRank,1, MPI_INT, MASTER, SENT_FILE, MPI_COMM_WORLD, &request);
 	}
 }
 
@@ -480,15 +480,8 @@ void executeCommand(Rule* rule) {
         }
 
 	rule->isFinished = true;
-//	while(1) {
-//		if (!isFileExist(rule->name)) {
-//			 break;
-//			cout << "FILE: " << rule->name << " existed"<<endl;
-//		}
-//		cout << "WARNING: File  " << rule->name << " has not existed yet" <<endl;
-//	}
 	
-//	sendFile(rule->name, getHostName(0));
+	sendFile(rule->name, getHostName(0));
 	int result = rule->idRule;
 	MPI_Send(&result, 1, MPI_INT, MASTER, FINISHED_TAG, MPI_COMM_WORLD);
 	cout << "ESCLAVE:" << myRank << "FINISHED TASK:" << tasks[result]->name  << endl;
