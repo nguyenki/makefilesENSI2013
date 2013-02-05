@@ -17,7 +17,7 @@ using namespace std;
 
 //string inputFile=PREMIER;
 string inputFile="";
-string premierDir = "/tmp/nguyenki/TestPrograms/premier";
+string premierDir = "/tmp/makefile/premier";
 
 int myRank;
 int nbM;
@@ -165,16 +165,17 @@ void worker() {
 		if (status.MPI_TAG == SENT_FILE) {
 			cout << "Receive file" << tasks[work]->name << "from master" <<endl;
 		}
-		
+
 		if (status.MPI_TAG == NOT_EXIST_TAG) {
 			cout << "File not exist yet" <<endl;
 		}
-		
+
 		if (status.MPI_TAG == 123) {
 			return;
 		}
 
 		if (status.MPI_TAG==WORK_TAG) {
+			cout << "RECEIVE TASK:" << tasks[work]->name <<endl;
 			tasksTodo = work;
 		}
 
@@ -222,7 +223,7 @@ void master() {
 				// Envoyer nouveau tache pour esclave
 				if (taTodo!=-1) {
 					MPI_Send(&work, 1, MPI_INT, source, WORK_TAG, MPI_COMM_WORLD);
-					cout << "MASTER SEND TASK: " << tasks[work]->name << "  TO   " << source <<endl;
+					cout << "MASTER SENDTASK: " << tasks[work]->name << "  TO   " << source <<endl;
 				}
 				taTodo = getTaskTodo();
 				if (taTodo!=-1) {
@@ -233,14 +234,17 @@ void master() {
 
 			case NEED_FILE: {
 				cout << "ENTERING NEED FILE..................: FROM:" << source << ":RESULT:" << tasks[result]->name <<endl;
-				bool fileExist = isFileExist(tasks[result]->name);
+			//	bool fileExist = isFileExist(tasks[result]->name);
+				bool isAllFileExist = isAllDependantFilesExist(tasks[result]);
+					if (isAllFileExist) {
+						for(list<Rule*>::const_iterator it = tasks[result]->dependences.begin(); it!= tasks[result]->dependences.end();++it) {
+							sendFile(tasks[result]->name,getHostName(source));
+							cout << "SENT  FILE:" << (*it)->name << "TO HOST:" << getHostName(source) <<endl;
 
-					if (fileExist) {
-						sendFile(tasks[result]->name,getHostName(source));
-						cout << "SENT FILE:" << tasks[result]->name << "TO HOST:" << getHostName(source) <<endl;
+						}
 						MPI_Send(&result, 1, MPI_INT, source, SENT_FILE, MPI_COMM_WORLD);
 					} else {
-						cout << "FILE:" << tasks[result]->name << " DOESN'T EXISTE" <<endl;
+						cout << "ALL FILE NEEDED:" << tasks[result]->name << " DOESN'T EXISTE YET" <<endl;
 						MPI_Send(&result, 1, MPI_INT, source, NOT_EXIST_TAG, MPI_COMM_WORLD);
 					}
 				break;
@@ -263,7 +267,7 @@ void master() {
 	int all_done = 123;
 	for (int i=1;i<nbHost;i++) {
 		cout << "SEND DIE TASK TO RANK:" << i <<endl;
-		MPI_Send(0, 0, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
+		MPI_Send(&all_done, 1, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
 	}
 }
 
@@ -320,7 +324,7 @@ int getParameterCommandLine(int argc, char* argv[]) {
 		para = argv[1];
 		if (para != "-nkt") {
 			cout << argv[1] <<" parameter doesn't exist\n"<<endl;
-			cout <<"Usage: ./sdmake -tc Makefile"<<endl;
+			cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
 			return -1;
 		} else {
 			string temp = argv[2];
@@ -354,15 +358,20 @@ void getTaskTodoFromRule(Rule* rule) {
 bool isAllDependantFilesExist(Rule* rule) {
 	bool allDependantFileExist = true;
 	for(list<string>::const_iterator it = rule->dpNames.begin(); it!=rule->dpNames.end();++it) {
+		cout << "I READLY NEED FILE: " <<endl;
 		bool fileExist = isFileExist(*it);
+/*
 		if (fileExist == false) {
-			cout << "--------FILE NOT EXIST-----" << *it << "RANK:" << myRank <<endl;
-			sendDemandFile(*it); 
+			cout << "--------FILE NOT EXIST-----" << (*it) << " RANK:" << myRank << "NAME:" << tasks[rule->idRule]->name  << "\n" <<endl;
+			sendDemandFile(*it);
 		} else {
-			cout << "--------FILE  EXISTED-----" << *it << "RANK:" << myRank  <<endl;
-			
+			cout << "--------FILE  EXISTED-----" << (*it) << "  RANK:" << myRank << "\n"  <<endl;
 		}
+*/
 		allDependantFileExist = allDependantFileExist && fileExist;
+	}
+	if (!allDependantFileExist && myRank!=MASTER) {
+		sendDemandFile(rule->name);
 	}
 	return allDependantFileExist;
 }
@@ -393,12 +402,14 @@ void sendDemandFile(const string &fileName) {
 }
 
 void deleteFile(const string &fileName) {
+
 	string cmd = "rm "+fileName;
 	system(cmd.c_str());
+	system("pwd > AAA.txt 2>err.txt");
 	if (!isFileExist(fileName)) {
-		cout <<"File: "<<fileName <<"  is deleted" <<endl;
+		cout <<"File: "<<fileName <<"  is deleted" << "    RANK:" << myRank <<endl;
 	} else {
-		cout << "Unable to delete file: "<<fileName<<endl;
+		cout << "Unable to delete file: "<<fileName << "   IN RANK" << myRank<<endl;
 	}
 }
 
@@ -410,7 +421,11 @@ void sendFile(const string &fileName, const string &hostname) {
 	cout << "SENT FILE" << fileName << "TO:" << hostname <<endl;
 	system(cmd.c_str());
 	if (myRank!=MASTER) {
-		deleteFile(fileName);
+		cout << "AAAAAAAAAAAAAAAAAAAAA" <<endl;
+		if (isFileExist(fileName)) {
+			cout << "BBBBBBBBBBBBBBB" <<endl;
+			deleteFile(fileName);
+		}
 	}
 }
 
@@ -426,7 +441,8 @@ string getCurrentDirectory() {
 
 vector<string> getAllFileNameInCurrentDir() {
 	vector<string> archives = vector<string>();
-	string dirPath = getCurrentDirectory();
+	string dirPath = premierDir;
+	
 	DIR *dp;
 	struct dirent *drnt;
 	dp = opendir(dirPath.c_str());
@@ -434,6 +450,7 @@ vector<string> getAllFileNameInCurrentDir() {
 		cout << "Error(" << errno << ") opening" << dirPath << endl;
 	} else {
 		while ((drnt=readdir(dp)) != NULL) {
+			cout << "DEBUG:" << drnt->d_name << "	IN RANK	" << myRank <<endl;
 			archives.push_back(drnt->d_name);
 		}
                 closedir(dp);
