@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-
+	
 use strict;
 use warnings;
 
@@ -11,9 +11,9 @@ my @b;
 my @c;
 my @p;
 
-print "all: c\n\n";
+print "all: c\n";
 #print "all: c check\n\n";
-
+print "\tcat c > all\n";
 print "check:\ta b\n";
 print "\t multiply check a b\n";
 

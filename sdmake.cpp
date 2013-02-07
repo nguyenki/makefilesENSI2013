@@ -15,14 +15,15 @@
 
 using namespace std;
 
-//string inputFile=PREMIER;
 string inputFile="";
-string premierDir = "/tmp/makefile/premier";
+string premierDir = "/tmp/makefile/";
 
 int myRank;
 int nbM;
 char processName[MPI_MAX_PROCESSOR_NAME];
 char masterName[MPI_MAX_PROCESSOR_NAME];
+double startTime;
+double endTime;
 
 int main( int argc, char* argv[])
 {
@@ -32,12 +33,14 @@ int main( int argc, char* argv[])
 	if (parseResult!=1) {
 		return -1;
 	}
-/*
+
 	/****************************************************
 	 * Routine principale
 	 ****************************************************/
 
+
 	MPI_Init(&argc, &argv);
+	startTime = MPI_Wtime();
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	parse(inputFile);
 	getTaskTodoFromRule(rules[target]);
@@ -48,29 +51,17 @@ int main( int argc, char* argv[])
 	MPI_Get_processor_name(processName, &len);
 	cout <<"Running in machine:" << processName << "  with rank: " << myRank <<endl;
 	getAllHostName(myHostName);
-//	cout << "MASTER NAME:" << getHostName(0) <<endl;
 
+	cout << getCurrentDirectory() <<endl;
 
 	if (myRank==MASTER) {
 		master();
+
 	} else {
 		worker();
 	}
 
 
-
-
-//	deleteFile("kim"); // OK
-//	cout <<"delete file test"<< isFileExist("sendtest")<<endl;
-//	sendFile("cogang","nguyenki@ensisun.imag.fr"); OK
-
-/*
-
-	getAllHostName(myHostName);
-	cout << "MASTER HOST NAME:" << getMasterName(myHostName) <<endl;
-
-	cout << "Host:" << getHostName(1) <<endl;
-*/
 	MPI_Finalize();
 
 	return 0;
@@ -113,23 +104,6 @@ int getTaskTodo() {
 		indice--;
 	}
 	return todo;
-}
-
-
-// ANOTHER IDEA
-void executeTask(int taskToExecute) {
-	bool notHaveDependencies = tasks[taskToExecute]->dependences.size()==0;
-	if (notHaveDependencies) {
-		// Execute la commande
-		// Verifier si les fichiers dependants sont deja fournis par le maitre
-		bool isAbleToExecuteCmd = isAllDependantFilesExist(tasks[taskToExecute]);
-		if (isAbleToExecuteCmd) {
-			executeCommand(tasks[taskToExecute]);
-		} else {
-			// Denader le fichier necessaire
-			MPI_Send(&taskToExecute, 1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD);
-		}
-	}
 }
 
 
@@ -209,19 +183,22 @@ void master() {
 	// Send a task to each worker
 	for (int i=1;i<nbHost;i++) {
 		work = getTaskTodo();
-		cout << "DISTRIBUTED TASKS " << tasks[work]->name << " TO " << i   <<endl;
+		if (work!=-1) {
+			cout << "DISTRIBUTED TASKS " << tasks[work]->name << " TO " << i   <<endl;
+		}
 		MPI_Send(&work, 1, MPI_INT, i, WORK_TAG, MPI_COMM_WORLD);
 	}
 
 	work = getTaskTodo();
-	while (work!=-1) {
+	bool exit = false;
+	while (!exit) {
 		MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,&status);
 		source = status.MPI_SOURCE;
 		switch(status.MPI_TAG) {
 			case FINISHED_TAG: {
 				maskTaskAsFinished(tasks[result]);
 				// Envoyer nouveau tache pour esclave
-				if (taTodo!=-1) {
+				if (taTodo!=-1 && work!=-1) {
 					MPI_Send(&work, 1, MPI_INT, source, WORK_TAG, MPI_COMM_WORLD);
 					cout << "MASTER SENDTASK: " << tasks[work]->name << "  TO   " << source <<endl;
 				}
@@ -234,13 +211,12 @@ void master() {
 
 			case NEED_FILE: {
 				cout << "ENTERING NEED FILE..................: FROM:" << source << ":RESULT:" << tasks[result]->name <<endl;
-			//	bool fileExist = isFileExist(tasks[result]->name);
 				bool isAllFileExist = isAllDependantFilesExist(tasks[result]);
 					if (isAllFileExist) {
-						for(list<Rule*>::const_iterator it = tasks[result]->dependences.begin(); it!= tasks[result]->dependences.end();++it) {
-							sendFile(tasks[result]->name,getHostName(source));
-							cout << "SENT  FILE:" << (*it)->name << "TO HOST:" << getHostName(source) <<endl;
-
+						for(list<string>::const_iterator it = tasks[result]->dpNames.begin(); it!= tasks[result]->dpNames.end();++it) {
+							cout << "PREPARING TO SEND FILE..................................." <<endl;
+							sendFile(*it,getHostName(source));
+							cout << "SENT  FILE:" << (*it) << "TO HOST:" << getHostName(source) <<endl;
 						}
 						MPI_Send(&result, 1, MPI_INT, source, SENT_FILE, MPI_COMM_WORLD);
 					} else {
@@ -253,22 +229,36 @@ void master() {
 		cout << "TASK NUMBER LEFT :" << tasksTodo <<endl;
 		if (tasksTodo==0) {
 			cout << "ALL TASK DONE ....................." <<endl;
-			work=-1;
+			exit = true;
 		}
 
 	}
 
 	// Tous les taches sont faites. Alors, on recoit tous les derieres resultats d'esclave
-//	for (int i=1; i<nbHost;i++) {
-//		MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,&status);
-//	}
+	MPI_Request re;
+	for (int i=1; i<nbHost;i++) {
+		MPI_Irecv(&result, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,&re);
+	}
+
+
+        endTime = MPI_Wtime();
+        if (myRank==MASTER) {
+		stringstream result;
+		result << (endTime-startTime);
+                cout << "RUNNING TIME:" << endTime-startTime <<endl;
+		write_result(result.str());
+	}
 
 	// Envoyer un broadcast pour informer que tous les taches sont finis
-	int all_done = 123;
-	for (int i=1;i<nbHost;i++) {
-		cout << "SEND DIE TASK TO RANK:" << i <<endl;
-		MPI_Send(&all_done, 1, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD);
-	}
+        int all_done = 123;
+        MPI_Request rq;
+        for (int i=1;i<nbHost;i++) {
+                cout << "SEND DIE TASK TO RANK:" << i <<endl;
+                MPI_Isend(&all_done, 1, MPI_INT, i, DIE_TAG, MPI_COMM_WORLD, &rq);
+        }
+
+
+	MPI_Abort(MPI_COMM_WORLD, 911);
 }
 
 
@@ -296,16 +286,25 @@ void parse(string &nameInputFile) {
 			// Si ce n'est pas une ligne qui a un cible suivant par un : ==> ignore le.
 			if (ruleName.length() <2 && ruleName[ruleName.length()]!=':')
 				continue;
-			ruleName = ruleName.substr(0, ruleName.size()-1);
+
+			if (ruleName[ruleName.length()-1]==':') {
+				ruleName = ruleName.substr(0, ruleName.size()-1);
+			}
 
 			if (target=="") {
 				target = ruleName;
 			}
 
 			rule = findRuleByName(ruleName);
+			stringstream p;
+			p  << ':';
+			string point;
+			p >> point;
 			string dependency;
 			while (line_temp >> dependency) {
-				addDependency(rule, dependency);
+				if (dependency!=point && dependency[dependency.length()-1]!='\t') {
+					addDependency(rule, dependency);
+				}
   			}
 		} else {
 			rule->command.push_back(line);
@@ -318,20 +317,24 @@ int getParameterCommandLine(int argc, char* argv[]) {
 	string para;
 	string path;
 	if (argc<3) {
-		cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+		cout <<"Usage: ./sdmake tc Makefile"<<endl;
 		exit(0);
 	} else {
 		para = argv[1];
-		if (para != "-nkt") {
+		if (para != "-tc") {
 			cout << argv[1] <<" parameter doesn't exist\n"<<endl;
-			cout <<"Usage: ./sdmake -nkt Makefile"<<endl;
+			cout <<"Usage: ./sdmake -tc Makefile dir_name [target]"<<endl;
 			return -1;
 		} else {
 			string temp = argv[2];
 			if (temp=="Makefile") {
 				inputFile=temp;
 				if (argc==4) {
-					target = argv[3];
+					string dir_name = argv[3];
+					premierDir+=dir_name;
+					if (argc==5) {
+						target = argv[3];
+					}
 				}
 				return 1;
 			} else {
@@ -358,16 +361,8 @@ void getTaskTodoFromRule(Rule* rule) {
 bool isAllDependantFilesExist(Rule* rule) {
 	bool allDependantFileExist = true;
 	for(list<string>::const_iterator it = rule->dpNames.begin(); it!=rule->dpNames.end();++it) {
-		cout << "I READLY NEED FILE: " <<endl;
 		bool fileExist = isFileExist(*it);
-/*
-		if (fileExist == false) {
-			cout << "--------FILE NOT EXIST-----" << (*it) << " RANK:" << myRank << "NAME:" << tasks[rule->idRule]->name  << "\n" <<endl;
-			sendDemandFile(*it);
-		} else {
-			cout << "--------FILE  EXISTED-----" << (*it) << "  RANK:" << myRank << "\n"  <<endl;
-		}
-*/
+
 		allDependantFileExist = allDependantFileExist && fileExist;
 	}
 	if (!allDependantFileExist && myRank!=MASTER) {
@@ -387,7 +382,7 @@ bool isFileExist(const string &fileName) {
 	return exist;
 }
 
-// TODO: need to review
+
 void sendDemandFile(const string &fileName) {
 	int ind=0;
 	int i=0;;
@@ -405,7 +400,6 @@ void deleteFile(const string &fileName) {
 
 	string cmd = "rm "+fileName;
 	system(cmd.c_str());
-	system("pwd > AAA.txt 2>err.txt");
 	if (!isFileExist(fileName)) {
 		cout <<"File: "<<fileName <<"  is deleted" << "    RANK:" << myRank <<endl;
 	} else {
@@ -421,9 +415,7 @@ void sendFile(const string &fileName, const string &hostname) {
 	cout << "SENT FILE" << fileName << "TO:" << hostname <<endl;
 	system(cmd.c_str());
 	if (myRank!=MASTER) {
-		cout << "AAAAAAAAAAAAAAAAAAAAA" <<endl;
 		if (isFileExist(fileName)) {
-			cout << "BBBBBBBBBBBBBBB" <<endl;
 			deleteFile(fileName);
 		}
 	}
@@ -442,7 +434,7 @@ string getCurrentDirectory() {
 vector<string> getAllFileNameInCurrentDir() {
 	vector<string> archives = vector<string>();
 	string dirPath = premierDir;
-	
+
 	DIR *dp;
 	struct dirent *drnt;
 	dp = opendir(dirPath.c_str());
@@ -500,7 +492,7 @@ void executeCommand(Rule* rule) {
         }
 
 	rule->isFinished = true;
-	
+
 	sendFile(rule->name, getHostName(0));
 	int result = rule->idRule;
 	MPI_Send(&result, 1, MPI_INT, MASTER, FINISHED_TAG, MPI_COMM_WORLD);
@@ -544,7 +536,7 @@ string getMasterName(const string &hostFileName) {
 			line_tmp >> masterName;
 		}
 		if (masterName =="") {
-			cout << "myHost File is empty" <<endl;		
+			cout << "myHost File is empty" <<endl;
 		} else {
 			break;
 		}
@@ -554,7 +546,7 @@ string getMasterName(const string &hostFileName) {
 }
 
 void getAllHostName(const string &hostFileName) {
-	char line[LINE_LENGTH];	
+	char line[LINE_LENGTH];
 	string host = "";
 	ifstream inFile;
 	inFile.open(myHostName.c_str());
@@ -567,8 +559,8 @@ void getAllHostName(const string &hostFileName) {
 			continue;
 		line_tmp >> host;
 		if (host!="") {
-			allHostNames.push_back(host);	
-		}		
+			allHostNames.push_back(host);
+		}
 	}
 	if (allHostNames.size()==0) {
 		cout << "NO HOST FOUND IN THE MYHOST FILE" <<endl;
@@ -579,42 +571,11 @@ string getHostName(int rank) {
 	return allHostNames[rank];
 }
 
-
-
-
-/*****************************************************************************
-*************** VOL DE TRAVAIL APRES******************************************/
-
-
-
-void executeAllMyTasks() {
-	MPI_Request request;
-	list<int> tasks_done;
-	int done_task;
-	for (list<int>::const_iterator it = myTasks.begin(); it!=myTasks.end();++it) {
-		bool notHaveDependencies = tasks[(*it)]->dependences.size()==0;
-		if (notHaveDependencies) {
-			// Execute la commande
-			// Verifier si les fichiers dependants sont deja fournis par le maitre
-			bool isAbleToExecuteCmd = isAllDependantFilesExist(tasks[*it]);
-			if (isAbleToExecuteCmd) {
-				executeCommand(tasks[(*it)]);
-				// Envoyer a broadcast message a tous le monde
-				done_task = (*it);
-				for (int i=0;i<nbM;i++) {
-					if (i!=myRank) {
-						MPI_Isend(&done_task, 1, MPI_INT, i, FINISHED_TAG, MPI_COMM_WORLD, &request);
-					}
-				}
-				tasks_done.push_back(*it);
-			}
-		} else {
-			// TODO: Demander le fichier necessaire
-			MPI_Isend(&myRank,1, MPI_INT, MASTER, NEED_FILE, MPI_COMM_WORLD, &request);
-		}
-	}
-	for(list<int>::const_iterator it = tasks_done.begin(); it!=tasks_done.end();++it) {
-		myTasks.remove(*it);
-	}
+void write_result(const string &text) {
+    std::ofstream log_file("time_execution.txt", std::ios_base::out | std::ios_base::app);
+    log_file << text << endl;
 }
+
+
+
 

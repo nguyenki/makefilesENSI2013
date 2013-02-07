@@ -33,7 +33,6 @@ int cptRule = 0;
 string target; // Le premier cible a executer
 int tasksTodo;
 
-list<int> myTasks;
 
 /* Struct Rule pour presenter une ligne (une regle) du MakeFile
  * Une regle depend aux autre regles et a aussi des dependances
@@ -96,6 +95,8 @@ void deleteFile(const string &fileName);
 string getCurrentDirectory();
 
 vector<string> getAllFileNameInCurrentDir();
+
+void write_result(const string &text);
 
 // Masquer que la tache est fini
 void maskTaskAsFinished(Rule* rule);

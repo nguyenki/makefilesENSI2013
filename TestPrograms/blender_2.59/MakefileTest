@@ -1,0 +1,30 @@
+out.avi: f_1.jpg f_2.jpg f_3.jpg f_4.jpg
+	ffmpeg -i "f_%d.jpg" out.avi
+
+f_1.jpg: cube_anim_56.tga
+	convert cube_anim_56.tga -resize 640x480 f_1.jpg
+
+f_2.jpg: cube_anim_57.tga
+	convert cube_anim_57.tga -resize 640x480 f_2.jpg
+
+f_3.jpg: cube_anim_59.tga
+	convert cube_anim_59.tga -resize 640x480 f_3.jpg
+
+f_4.jpg: cube_anim_60.tga
+	convert cube_anim_60.tga -resize 640x480 f_4.jpg
+
+cube_anim_56.tga: cube_anim.blend
+	blender -b cube_anim.blend -o //cube_anim_#.tga -F TGA -f 56
+
+cube_anim_57.tga: cube_anim.blend
+	blender -b cube_anim.blend -o //cube_anim_#.tga -F TGA -f 57
+
+cube_anim_58.tga: cube_anim.blend
+	blender -b cube_anim.blend -o //cube_anim_#.tga -F TGA -f 58
+
+cube_anim_59.tga: cube_anim.blend
+	blender -b cube_anim.blend -o //cube_anim_#.tga -F TGA -f 59
+
+cube_anim_60.tga: cube_anim.blend
+	blender -b cube_anim.blend -o //cube_anim_#.tga -F TGA -f 60
+
